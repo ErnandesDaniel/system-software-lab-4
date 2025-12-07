@@ -13,7 +13,7 @@ extern putchar
 main:
     push rbp
     mov rbp, rsp
-    sub rsp, 88
+    sub rsp, 96
 BB_0:
     lea rax, [str_0]
     mov [rbp + -8], rax

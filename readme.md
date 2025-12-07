@@ -1,27 +1,25 @@
 
-Установить Visual Studio Build Tools (только инструменты, без IDE)
-https://visualstudio.microsoft.com/ru/visual-cpp-build-tools/
+Установить LLVM, в него будет включен Clang компилятор
 
-Разработка классических приложений на С++
+Установить Windows SDK
 
-Узнайте точный путь к vcvars64.bat
+https://developer.microsoft.com/ru-ru/windows/downloads/windows-sdk/
 
-Обычно путь вида
+Добавить cdb в PATH:
 
-C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat
+# Путь к x64-отладчикам
+$debuggerPath = "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64"
 
+# Добавить в PATH текущего пользователя
+[Environment]::SetEnvironmentVariable(
+    "Path",
+    [Environment]::GetEnvironmentVariable("Path", "User") + ";$debuggerPath",
+    "User"
+)
 
-Настроить терминал в CLion:
+Проверить, что установлен:
 
-Шаг 1: Откройте настройки CLion
-Нажмите File → Settings (или Ctrl+Alt+S)
-
-Шаг 2: Перейдите в настройки терминала
-В меню слева: Tools → Terminal
-
-Шаг 3: Замените Shell path на эту строку
-
-cmd /k "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+cdb -version
 
 Настройка CLion:
 
@@ -37,15 +35,26 @@ C:/Users/DN3672/CLionProjects/system-software-lab-4
 nasm -g -F cv8 -f win64 main.asm -o main.obj
 
 Для линковки и получения исполняемого файла можно использовать:
-link /debug /subsystem:console /entry:main main.obj ucrt.lib
-
-/debug — создать .pdb-файл
-/subsystem:console — консольное приложение
-/entry:main — точка входа (ваша метка main)
-ucrt.lib — библиотека для printf, puts и т.д.
+clang -g -gcodeview -o main.exe main.obj
 
 Запустить программу можно через
 .\main.exe
+
+Провести деббагинг можно через официальный инструмент:
+cdb -lines main.exe
+
+Выполянем:
+x main!*main*
+
+найти строку вида:
+00007ff7`7bce7390 main!main (main)
+
+устанавливаем brackpoint вида:
+bp 00007ff7`7bce7390
+
+запускаем программу
+g
+
 
 Посмотреть результат можно через:
 echo $LASTEXITCODE
