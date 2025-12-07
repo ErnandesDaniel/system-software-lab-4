@@ -1,47 +1,27 @@
 
+Установить Visual Studio Build Tools (только инструменты, без IDE)
+https://visualstudio.microsoft.com/ru/visual-cpp-build-tools/
 
-Скачать последнюю версию компилятора с https://www.nasm.us/
+Разработка классических приложений на С++
 
-Установить по стандартной процедуре
+Узнайте точный путь к vcvars64.bat
 
-Установить в переменные среды в Windows
+Обычно путь вида
 
-Должна быть доступна команда nasm -v
-
-Установите MSYS2 https://www.msys2.org/
-
-Скачайте установщик (msys2-x86_64-*.exe) и запустите его
-
-Откройте MSYS2 MSYS (из меню Пуск) и выполните:
-
-pacman -Syu
-
-Если система попросит перезапустить терминал — закройте его и откройте снова, затем снова выполните:
-
-pacman -Syu
-
-Установите MinGW-w64 GCC
-
-Откройте MSYS2 MinGW x64 (из меню Пуск).
-
-Далее выполнить
-pacman -S mingw-w64-x86_64-gcc
-
-Добавьте MinGW-w64 в PATH (переменные среды)
-
-C:\msys64\mingw64\bin
-
-Должна быть доступна команда gcc -v
+C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat
 
 
-установить зависимости Node.js:
-npm install
+Настроить терминал в CLion:
 
-Запуск генерации грамматики:
-npx tree-sitter generate
+Шаг 1: Откройте настройки CLion
+Нажмите File → Settings (или Ctrl+Alt+S)
 
-src- исходники парсера
+Шаг 2: Перейдите в настройки терминала
+В меню слева: Tools → Terminal
 
+Шаг 3: Замените Shell path на эту строку
+
+cmd /k "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 
 Настройка CLion:
 
@@ -53,23 +33,19 @@ input.mylang ast.mmd cfg assembler-code
 Working directory - рабочая директория (корень проекта):
 C:/Users/DN3672/CLionProjects/system-software-lab-4
 
-Скомпилировать главный файл в объектный файл windows можно через команду:
-nasm -f win64 main.asm -o main.obj
+Скомпилировать главный файл в объектный файл windows с отладочной информацией в формате CodeView (CV) можно через команду:
+nasm -g -F cv8 -f win64 main.asm -o main.obj
 
 Для линковки и получения исполняемого файла можно использовать:
-gcc main.obj -o main.exe
+link /debug /subsystem:console /entry:main main.obj ucrt.lib
+
+/debug — создать .pdb-файл
+/subsystem:console — консольное приложение
+/entry:main — точка входа (ваша метка main)
+ucrt.lib — библиотека для printf, puts и т.д.
 
 Запустить программу можно через
-.\program.exe
+.\main.exe
 
 Посмотреть результат можно через:
 echo $LASTEXITCODE
-
-подключить к ассемблеру функции malloc, gets, puts
-
-записываем эти функции через сигнатуру
-
-тело пустое
-
-генерируем вызов в ассемблере в соответствие с конвенкцией
-
