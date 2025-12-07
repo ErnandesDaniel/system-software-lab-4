@@ -1,0 +1,11 @@
+def test_binary_number_expression ()
+
+a=7+10*5;
+
+return a;
+
+end
+
+
+
+

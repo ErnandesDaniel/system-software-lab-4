@@ -1,0 +1,25 @@
+
+def test_if_else ()
+
+a=7;
+
+if a>5 then {
+
+i=1;
+
+} else{
+
+i=4;
+
+}
+
+a=5;
+
+return i;
+
+end
+
+
+
+
+
