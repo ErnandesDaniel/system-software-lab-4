@@ -6,9 +6,7 @@ global main
 extern puts
 extern getchar
 extern putchar
-extern putchar
 extern printf
-extern putchar
 
 main:
     push rbp

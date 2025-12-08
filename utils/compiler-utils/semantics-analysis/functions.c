@@ -90,6 +90,7 @@ void function_table_init(FunctionTable* table) {
 // Добавление функции в таблицу
 bool function_table_add(FunctionTable* table, FunctionInfo* func) {
     if (!table || !func || table->count >= 64) return false;
+    if (function_table_lookup(table, func->name) != NULL) return false;
     table->functions[table->count++] = func;
     return true;
 }
