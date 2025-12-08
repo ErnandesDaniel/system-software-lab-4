@@ -412,14 +412,23 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     sprintf(out + strlen(out), "    dq %s                         ; старт\n", func_info->name);
     sprintf(out + strlen(out), "    dq %s_end                     ; конец\n", func_info->name);
     sprintf(out + strlen(out), "    dd 0                          ; параметров: 0\n");
-    sprintf(out + strlen(out), "    dd %d                         ; локальных: %d\n", locals->count, locals->count);
+    sprintf(out + strlen(out), "    dd %d                         ; локальных: %d\n", unique_count, unique_count);
 
-    for (int i = 0; i < locals->count; i++) {
-        Symbol* sym = &locals->symbols[i];
-        sprintf(out + strlen(out), "    ; Переменная %s\n", sym->name);
-        sprintf(out + strlen(out), "    dq dbg_str_%s_%d                    ; имя\n", sym->name, i);
-        int type_code = (sym->type->kind == TYPE_STRING) ? 1 : 0; // 0 - int, 1 - string
-        sprintf(out + strlen(out), "    dd %d                            ; тип: %s\n", type_code, (type_code == 1) ? "string" : "int");
-        sprintf(out + strlen(out), "    dd %d                           ; смещение\n", sym->stack_offset);
+    for (int i = 0; i < unique_count; i++) {
+        // Find the first symbol with this name
+        Symbol* sym = NULL;
+        for (int j = 0; j < locals->count; j++) {
+            if (strcmp(locals->symbols[j].name, unique_names[i]) == 0) {
+                sym = &locals->symbols[j];
+                break;
+            }
+        }
+        if (sym) {
+            sprintf(out + strlen(out), "    ; Переменная %s\n", sym->name);
+            sprintf(out + strlen(out), "    dq dbg_str_%s                    ; имя\n", sym->name);
+            int type_code = (sym->type->kind == TYPE_STRING) ? 1 : 0; // 0 - int, 1 - string
+            sprintf(out + strlen(out), "    dd %d                            ; тип: %s\n", type_code, (type_code == 1) ? "string" : "int");
+            sprintf(out + strlen(out), "    dd %d                           ; смещение\n", sym->stack_offset);
+        }
     }
 }
