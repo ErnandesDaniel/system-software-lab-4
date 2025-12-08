@@ -85,6 +85,7 @@ void emit_epilogue(CodeGenContext* ctx) {
     sprintf(ctx->out + strlen(ctx->out), "; Очистка стека и возврат\n");
     sprintf(ctx->out + strlen(ctx->out), "    leave       ; эквивалент: mov rsp, rbp; pop rbp\n");
     sprintf(ctx->out + strlen(ctx->out), "    ret         ; возвращаем eax как результат\n");
+    sprintf(ctx->out + strlen(ctx->out), "%s_end:\n", ctx->current_function->name);
 }
 
 //Загружает операнд (константу или переменную) в регистр.
@@ -361,9 +362,40 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     }
     // No extra epilogue for main, as it's handled in IR_RET
 
-    // Append data section if there are strings
+    // Add debug strings to debug_str section
+    sprintf(ctx.debug_str_section + strlen(ctx.debug_str_section), "dbg_str_%s db '%s', 0\n", func_info->name, func_info->name);
+    for (int i = 0; i < locals->count; i++) {
+        Symbol* sym = &locals->symbols[i];
+        sprintf(ctx.debug_str_section + strlen(ctx.debug_str_section), "dbg_str_%s_%d db '%s', 0\n", sym->name, i, sym->name);
+    }
+
+    // Append rodata section if there are strings
     if (strlen(ctx.data_section) > 0) {
-        sprintf(out + strlen(out), "\nsection .data\n");
+        sprintf(out + strlen(out), "\nsection .rodata\n");
         sprintf(out + strlen(out), "%s", ctx.data_section);
+    }
+
+    // Append debug_str section
+    if (strlen(ctx.debug_str_section) > 0) {
+        sprintf(out + strlen(out), "\nsection .debug_str\n");
+        sprintf(out + strlen(out), "%s", ctx.debug_str_section);
+    }
+
+    // Generate debug info
+    sprintf(out + strlen(out), "\nsection .debug_info\n");
+    sprintf(out + strlen(out), "    ; === Функция %s ===\n", func_info->name);
+    sprintf(out + strlen(out), "    dq dbg_str_%s                 ; указатель на имя\n", func_info->name);
+    sprintf(out + strlen(out), "    dq %s                         ; старт\n", func_info->name);
+    sprintf(out + strlen(out), "    dq %s_end                     ; конец\n", func_info->name);
+    sprintf(out + strlen(out), "    dd 0                          ; параметров: 0\n");
+    sprintf(out + strlen(out), "    dd %d                         ; локальных: %d\n", locals->count, locals->count);
+
+    for (int i = 0; i < locals->count; i++) {
+        Symbol* sym = &locals->symbols[i];
+        sprintf(out + strlen(out), "    ; Переменная %s\n", sym->name);
+        sprintf(out + strlen(out), "    dq dbg_str_%s_%d                    ; имя\n", sym->name, i);
+        int type_code = (sym->type->kind == TYPE_STRING) ? 1 : 0; // 0 - int, 1 - string
+        sprintf(out + strlen(out), "    dd %d                            ; тип: %s\n", type_code, (type_code == 1) ? "string" : "int");
+        sprintf(out + strlen(out), "    dd %d                           ; смещение\n", sym->stack_offset);
     }
 }

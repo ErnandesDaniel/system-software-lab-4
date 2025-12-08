@@ -10,6 +10,7 @@ typedef struct CodeGenContext {
     int frame_size;               // общий размер стекового фрейма (выровненный до 16 байт)
     int string_counter;
     char data_section[4096];
+    char debug_str_section[4096];
 } CodeGenContext;
 
 
