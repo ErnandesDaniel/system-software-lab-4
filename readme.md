@@ -44,6 +44,9 @@ clang -g -gcodeview -o main.exe main.obj
 Запустить программу можно через
 .\main.exe
 
+.\program.exe
+
+
 Посмотреть результат можно через:
 echo $LASTEXITCODE
 

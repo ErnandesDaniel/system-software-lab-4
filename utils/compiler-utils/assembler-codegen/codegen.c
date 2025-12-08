@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 // Функция для обработки escape-последовательностей в строке и генерации байтового массива
 void emit_string_data(char* data_section, const char* input, const char* label) {
     size_t len = strlen(input);
@@ -47,7 +46,6 @@ void emit_string_data(char* data_section, const char* input, const char* label) 
     free(buffer);
 }
 
-
 //Выравнивает размер стека так, чтобы после push rbp стек был выровнен по 16 байтам перед вызовами функций.
 static int align_stack_size(int size) {
     int aligned = (size + 15) & ~15; // round up to 16
@@ -57,19 +55,17 @@ static int align_stack_size(int size) {
     return aligned;
 }
 
-
-//рассчитывает смещения для локальных переменных в стеке (начиная с -8, уменьшая на 4 байта для каждой).
-// Параметры не сохраняются в стек, а используются напрямую из регистров.
 void codegen_layout_stack_frame(SymbolTable* locals, int* out_frame_size) {
-    int offset = -8; // Start after return address
+    int offset = -8;
     for (int i = 0; i < locals->count; i++) {
-        // Assume all types are 4 bytes for simplicity
+        // ВСЕ переменные — по 8-байтным слотам
         locals->symbols[i].stack_offset = offset;
-        offset -= 4;
+        offset -= 8;
     }
-    int frame_size = -offset; // Total size needed
-    *out_frame_size = align_stack_size(frame_size);
+    int frame_size = -offset;
+    *out_frame_size = align_stack_size(frame_size); // ← остаётся
 }
+
 
 //Генерирует пролог функции: метку, push rbp, mov rbp, rsp, sub rsp для резервирования места.
 // Параметры используются напрямую из регистров, без сохранения в стек.
@@ -93,38 +89,39 @@ void emit_epilogue(CodeGenContext* ctx) {
 
 //Загружает операнд (константу или переменную) в регистр.
 // Для параметров использует регистры напрямую.
-void emit_load_operand(CodeGenContext* ctx, Operand* op, const char* reg32) {
+void emit_load_operand(CodeGenContext* ctx, Operand* op, const char* reg) {
     if (op->kind == OPERAND_CONST) {
         if (op->data.const_val.type->kind == TYPE_INT || op->data.const_val.type->kind == TYPE_BOOL) {
-            sprintf(ctx->out + strlen(ctx->out), "    mov %s, %d\n", reg32, op->data.const_val.value.integer);
+            sprintf(ctx->out + strlen(ctx->out), "    mov %s, %d\n", reg, op->data.const_val.value.integer);
         } else if (op->data.const_val.type->kind == TYPE_STRING) {
             // For strings, load address of string constant with escape sequence processing
             char label[32];
             sprintf(label, "str_%d", ctx->string_counter++);
             emit_string_data(ctx->data_section, op->data.const_val.value.string, label);
-            sprintf(ctx->out + strlen(ctx->out), "    lea %s, [%s]\n", reg32, label);
-        } else {
-            // Handle other types if needed
+            sprintf(ctx->out + strlen(ctx->out), "    lea %s, [%s]\n", reg, label);
         }
+        // Примечание: для строк в lea регистр может быть rax, rcx и т.д. — это нормально
     } else if (op->kind == OPERAND_VAR) {
         // Check if it's a parameter
         for (int i = 0; i < ctx->current_function->params.count && i < 4; i++) {
             if (strcmp(ctx->current_function->params.symbols[i].name, op->data.var.name) == 0) {
+                // Для параметров мы всё ещё используем 32-битные регистры из соглашения,
+                // но сохраняем результат в переданный регистр `reg`
                 const char* param_regs[] = {"ecx", "edx", "r8d", "r9d"};
-                sprintf(ctx->out + strlen(ctx->out), "    mov %s, %s\n", reg32, param_regs[i]);
+                sprintf(ctx->out + strlen(ctx->out), "    mov %s, %s\n", reg, param_regs[i]);
                 return;
             }
         }
-        // It's a local variable
+        // It's a local variable — просто копируем из стека в указанный регистр
         int offset = get_var_offset(&ctx->local_vars, op->data.var.name);
-        sprintf(ctx->out + strlen(ctx->out), "    mov %s, [rbp + %d]\n", reg32, offset);
+        sprintf(ctx->out + strlen(ctx->out), "    mov %s, [rbp + %d]\n", reg, offset);
     }
 }
 
 //Сохраняет регистр в переменную по смещению.
-void emit_store_to_var(CodeGenContext* ctx, const char* var_name, const char* reg32) {
+void emit_store_to_var(CodeGenContext* ctx, const char* var_name, const char* reg) {
     int offset = get_var_offset(&ctx->local_vars, var_name);
-    sprintf(ctx->out + strlen(ctx->out), "    mov [rbp + %d], %s\n", offset, reg32);
+    sprintf(ctx->out + strlen(ctx->out), "    mov [rbp + %d], %s\n", offset, reg);
 }
 
 //Находит смещение переменной по имени.
@@ -154,7 +151,13 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     codegen_layout_stack_frame(locals, &frame_size);
 
-    CodeGenContext ctx = {out, func_info, *locals, frame_size, 0, ""};
+    CodeGenContext ctx = {0}; // обнуляет ВСЮ структуру, включая data_section
+    ctx.out = out;
+    ctx.current_function = func_info;
+    ctx.local_vars = *locals;
+    ctx.frame_size = frame_size;
+    ctx.string_counter = 0;
+    // ctx.data_section уже заполнен нулями — strlen() = 0, всё безопасно
 
     emit_prologue(&ctx);
 
@@ -170,20 +173,23 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
             IRInstruction* inst = &block->instructions[j];
             switch (inst->opcode) {
                 case IR_ASSIGN:
-                    if (inst->data.assign.value.kind == OPERAND_CONST && inst->data.assign.value.data.const_val.type->kind == TYPE_STRING) {
-                        // For string assignment, load address directly to variable
-                        emit_load_operand(&ctx, &inst->data.assign.value, "rax");
-                        sprintf(ctx.out + strlen(ctx.out), "    mov [rbp + %d], rax\n", get_var_offset(&ctx.local_vars, inst->data.assign.target));
-                    } else if (inst->data.assign.value.kind == OPERAND_VAR &&
-                              symbol_table_lookup(&ctx.local_vars, inst->data.assign.value.data.var.name) &&
-                              symbol_table_lookup(&ctx.local_vars, inst->data.assign.value.data.var.name)->type->kind == TYPE_STRING) {
-                        // String variable assignment
-                        int offset = get_var_offset(&ctx.local_vars, inst->data.assign.value.data.var.name);
-                        sprintf(ctx.out + strlen(ctx.out), "    mov rax, [rbp + %d]\n", offset);
-                        sprintf(ctx.out + strlen(ctx.out), "    mov [rbp + %d], rax\n", get_var_offset(&ctx.local_vars, inst->data.assign.target));
+                    Operand* value = &inst->data.assign.value;
+                    const char* target = inst->data.assign.target;
+                    bool is_string = false;
+
+                    if (value->kind == OPERAND_CONST) {
+                        is_string = (value->data.const_val.type->kind == TYPE_STRING);
+                    } else if (value->kind == OPERAND_VAR) {
+                        Symbol* sym = symbol_table_lookup(&ctx.local_vars, value->data.var.name);
+                        is_string = (sym && sym->type->kind == TYPE_STRING);
+                    }
+
+                    if (is_string) {
+                        emit_load_operand(&ctx, value, "rax");
+                        emit_store_to_var(&ctx, target, "rax");
                     } else {
-                        emit_load_operand(&ctx, &inst->data.assign.value, "eax");
-                        emit_store_to_var(&ctx, inst->data.assign.target, "eax");
+                        emit_load_operand(&ctx, value, "eax");
+                        emit_store_to_var(&ctx, target, "eax");
                     }
                     break;
                 case IR_ADD:
@@ -330,23 +336,25 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
                     break;
                 case IR_RET:
                     if (inst->data.ret.has_value) {
-                        if (inst->data.ret.value.kind == OPERAND_VAR &&
-                            symbol_table_lookup(&ctx.local_vars, inst->data.ret.value.data.var.name) &&
-                            symbol_table_lookup(&ctx.local_vars, inst->data.ret.value.data.var.name)->type->kind == TYPE_STRING) {
-                            // Return string variable
-                            int offset = get_var_offset(&ctx.local_vars, inst->data.ret.value.data.var.name);
-                            sprintf(ctx.out + strlen(ctx.out), "    mov rax, [rbp + %d]\n", offset);
-                        } else if (inst->data.ret.value.kind == OPERAND_CONST && inst->data.ret.value.data.const_val.type->kind == TYPE_STRING) {
-                            emit_load_operand(&ctx, &inst->data.ret.value, "rax");
+                        Operand* value = &inst->data.ret.value;
+                        bool is_string = false;
+
+                        if (value->kind == OPERAND_CONST) {
+                            is_string = (value->data.const_val.type->kind == TYPE_STRING);
+                        } else if (value->kind == OPERAND_VAR) {
+                            Symbol* sym = symbol_table_lookup(&ctx.local_vars, value->data.var.name);
+                            is_string = (sym && sym->type->kind == TYPE_STRING);
+                        }
+
+                        if (is_string) {
+                            emit_load_operand(&ctx, value, "rax");
+                            // Значение уже в rax — ничего дополнительно делать не нужно
                         } else {
-                            emit_load_operand(&ctx, &inst->data.ret.value, "eax");
+                            emit_load_operand(&ctx, value, "eax");
+                            // Значение уже в eax — корректно для возврата int/bool
                         }
                     }
                     emit_epilogue(&ctx);
-                    break;
-                default:
-                    // Unsupported opcode
-                    sprintf(ctx.out + strlen(ctx.out), "    ; Unsupported IR opcode: %d\n", inst->opcode);
                     break;
             }
         }

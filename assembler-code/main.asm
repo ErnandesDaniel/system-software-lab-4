@@ -13,55 +13,55 @@ extern putchar
 main:
     push rbp
     mov rbp, rsp
-    sub rsp, 96
+    sub rsp, 168
 BB_0:
     lea rax, [str_0]
     mov [rbp + -8], rax
     mov rax, [rbp + -8]
-    mov [rbp + -12], rax
-    mov rcx, [rbp + -12]
+    mov [rbp + -16], rax
+    mov rcx, [rbp + -16]
     sub rsp, 32
     call puts
     add rsp, 32
-    mov [rbp + -24], eax
+    mov [rbp + -40], eax
     sub rsp, 32
     call getchar
     add rsp, 32
-    mov [rbp + -28], eax
-    mov eax, [rbp + -28]
-    mov [rbp + -32], eax
-    mov ecx, [rbp + -32]
-    sub rsp, 32
-    call putchar
-    add rsp, 32
-    mov [rbp + -44], eax
-    mov eax, 10
     mov [rbp + -48], eax
-    mov ecx, [rbp + -48]
+    mov eax, [rbp + -48]
+    mov [rbp + -56], eax
+    mov ecx, [rbp + -56]
     sub rsp, 32
     call putchar
     add rsp, 32
-    mov [rbp + -52], eax
-    lea rax, [str_1]
-    mov [rbp + -56], rax
+    mov [rbp + -80], eax
     mov eax, 10
-    mov [rbp + -60], eax
-    mov rcx, [rbp + -56]
-    mov edx, [rbp + -60]
+    mov [rbp + -88], eax
+    mov ecx, [rbp + -88]
+    sub rsp, 32
+    call putchar
+    add rsp, 32
+    mov [rbp + -96], eax
+    lea rax, [str_1]
+    mov [rbp + -104], rax
+    mov eax, 10
+    mov [rbp + -112], eax
+    mov rcx, [rbp + -104]
+    mov edx, [rbp + -112]
     sub rsp, 32
     call printf
     add rsp, 32
-    mov [rbp + -64], eax
+    mov [rbp + -120], eax
     mov eax, 10
-    mov [rbp + -68], eax
-    mov ecx, [rbp + -68]
+    mov [rbp + -128], eax
+    mov ecx, [rbp + -128]
     sub rsp, 32
     call putchar
     add rsp, 32
-    mov [rbp + -72], eax
+    mov [rbp + -136], eax
     mov eax, 27
-    mov [rbp + -76], eax
-    mov eax, [rbp + -76]
+    mov [rbp + -144], eax
+    mov eax, [rbp + -144]
 ; Очистка стека и возврат
     leave       ; эквивалент: mov rsp, rbp; pop rbp
     ret         ; возвращаем eax как результат
