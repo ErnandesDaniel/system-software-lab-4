@@ -1,4 +1,18 @@
 
+
+Настройка CLion:
+
+Edit Configurations
+
+program arguments - Конфигурация запуска основного файла программы:
+input.mylang ast.mmd cfg assembler-code
+
+Working directory - рабочая директория (корень проекта):
+C:/Users/DN3672/CLionProjects/system-software-lab-4
+
+
+Использование стандартного компилятора под Windows:
+
 Установить LLVM, в него будет включен Clang компилятор
 
 Установить Windows SDK
@@ -20,16 +34,6 @@ $debuggerPath = "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64"
 Проверить, что установлен:
 
 cdb -version
-
-Настройка CLion:
-
-Edit Configurations
-
-program arguments - Конфигурация запуска основного файла программы:
-input.mylang ast.mmd cfg assembler-code
-
-Working directory - рабочая директория (корень проекта):
-C:/Users/DN3672/CLionProjects/system-software-lab-4
 
 Скомпилировать главный файл в объектный файл windows с отладочной информацией в формате CodeView (CV) можно через команду:
 nasm -g -F cv8 -f win64 main.asm -o main.obj
