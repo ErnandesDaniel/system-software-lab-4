@@ -2,6 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+
+// Helper function to check if a variable is a temporary (starts with 't' followed by digits)
+bool is_temporary(const char* name) {
+    return name[0] == 't' && isdigit(name[1]);
+}
 
 // Функция для обработки escape-последовательностей в строке и генерации байтового массива
 void emit_string_data(char* data_section, const char* input, const char* label) {
@@ -362,11 +368,29 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     }
     // No extra epilogue for main, as it's handled in IR_RET
 
-    // Add debug strings to debug_str section
-    sprintf(ctx.debug_str_section + strlen(ctx.debug_str_section), "dbg_str_%s db '%s', 0\n", func_info->name, func_info->name);
+    // Collect unique non-temporary variable names
+    char unique_names[100][32];
+    int unique_count = 0;
     for (int i = 0; i < locals->count; i++) {
         Symbol* sym = &locals->symbols[i];
-        sprintf(ctx.debug_str_section + strlen(ctx.debug_str_section), "dbg_str_%s_%d db '%s', 0\n", sym->name, i, sym->name);
+        if (!is_temporary(sym->name)) {
+            bool found = false;
+            for (int j = 0; j < unique_count; j++) {
+                if (strcmp(unique_names[j], sym->name) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                strcpy(unique_names[unique_count++], sym->name);
+            }
+        }
+    }
+
+    // Add debug strings to debug_str section
+    sprintf(ctx.debug_str_section + strlen(ctx.debug_str_section), "dbg_str_%s db '%s', 0\n", func_info->name, func_info->name);
+    for (int i = 0; i < unique_count; i++) {
+        sprintf(ctx.debug_str_section + strlen(ctx.debug_str_section), "dbg_str_%s db '%s', 0\n", unique_names[i], unique_names[i]);
     }
 
     // Append rodata section if there are strings
