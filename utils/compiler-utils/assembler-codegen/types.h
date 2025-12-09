@@ -11,6 +11,9 @@ typedef struct CodeGenContext {
     int string_counter;
     char data_section[4096];
     char debug_str_section[4096];
+    bool seen_lines[1000];
+    int debug_lines[100];
+    int debug_count;
 } CodeGenContext;
 
 

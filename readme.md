@@ -95,3 +95,67 @@ da 00007ff7`b775d000
 
 Посмотреть регистры можно через:
 r
+
+
+
+
+
+мне нужно для каждой инструкции из исходников получать номер строки инстркции
+
+и потом ее записывать в .debug_line в ассемблере
+
+нужно следовать правилу:
+
+Для каждой исходной строки, содержащей исполняемый код, укажите адрес первой инструкции, сгенерированной для этой строки.
+
+создавайте метки в ассемблере для начала каждой строки:
+
+
+main:
+push rbp
+mov rbp, rsp
+sub rsp, 168
+
+; --- строка 7: s = "..." ---
+.line_7:
+lea rax, [str_0]
+mov [rbp + -8], rax
+; ... (копии и т.д.)
+
+; --- строка 9: puts(s) ---
+.line_9:
+mov rcx, [rbp + -16]
+sub rsp, 32
+call puts
+add rsp, 32
+
+; --- строка 11: c = getchar() ---
+.line_11:
+sub rsp, 32
+call getchar
+add rsp, 32
+mov [rbp + -48], eax
+
+; --- строка 12: putchar(c) ---
+.line_12:
+mov eax, [rbp + -48]
+mov [rbp + -56], eax
+mov ecx, [rbp + -56]
+sub rsp, 32
+call putchar
+add rsp, 32
+
+; ... и так далее
+
+section .debug_line
+dq .line_7,   dd 7
+dq .line_9,   dd 9
+dq .line_11,  dd 11
+dq .line_12,  dd 12
+dq .line_13,  dd 13
+dq .line_15,  dd 15
+dq .line_17,  dd 17
+dq .line_19,  dd 19
+
+
+

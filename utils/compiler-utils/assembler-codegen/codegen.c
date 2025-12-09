@@ -164,6 +164,8 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     ctx.local_vars = *locals;
     ctx.frame_size = frame_size;
     ctx.string_counter = 0;
+    ctx.debug_count = 0;
+    memset(ctx.seen_lines, 0, sizeof(ctx.seen_lines));
     // ctx.data_section уже заполнен нулями — strlen() = 0, всё безопасно
 
     emit_prologue(&ctx);
@@ -178,6 +180,12 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
         for (size_t j = 0; j < block->num_instructions; j++) {
             IRInstruction* inst = &block->instructions[j];
+            // Emit line label if this is a new line number
+            if (inst->line_number > 0 && !ctx.seen_lines[inst->line_number]) {
+                sprintf(ctx.out + strlen(ctx.out), "line_%d:\n", inst->line_number);
+                ctx.seen_lines[inst->line_number] = true;
+                ctx.debug_lines[ctx.debug_count++] = inst->line_number;
+            }
             switch (inst->opcode) {
                 case IR_ASSIGN:
                     Operand* value = &inst->data.assign.value;
@@ -430,5 +438,12 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
             sprintf(out + strlen(out), "    dd %d                            ; тип: %s\n", type_code, (type_code == 1) ? "string" : "int");
             sprintf(out + strlen(out), "    dd %d                           ; смещение\n", sym->stack_offset);
         }
+    }
+
+    // Generate debug_line section
+    sprintf(out + strlen(out), "\nsection .debug_line\n");
+    for (int i = 0; i < ctx.debug_count; i++) {
+        sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
+        sprintf(out + strlen(out), "dd %d\n", ctx.debug_lines[i]);
     }
 }

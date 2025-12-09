@@ -116,6 +116,12 @@ Type* visit_binary_expr(CFGBuilderContext* ctx, TSNode node, char* result_var){
         strcpy(assign.data.assign.target, var_name);
         assign.data.assign.value = make_var_operand(right_temp, right_type);
         emit_instruction(ctx, assign);
+    
+        // Set line number for the assign instruction
+        if (ctx->current_block && ctx->current_block->num_instructions > 0) {
+            TSPoint start = ts_node_start_point(node);
+            ctx->current_block->instructions[ctx->current_block->num_instructions - 1].line_number = start.row + 1;
+        }
         // Результат присваивания — значение справа (как в C)
         strcpy(result_var, right_temp);
         return right_type;
@@ -239,6 +245,12 @@ Type* visit_unary_expr(CFGBuilderContext* ctx, TSNode node, char* result_var) {
     unary.data.unary.result_type = result_type;
     unary.data.unary.operand = make_var_operand(operand_temp, operand_type);
     emit_instruction(ctx, unary);
+
+    // Set line number for the unary instruction
+    if (ctx->current_block && ctx->current_block->num_instructions > 0) {
+        TSPoint start = ts_node_start_point(node);
+        ctx->current_block->instructions[ctx->current_block->num_instructions - 1].line_number = start.row + 1;
+    }
     return result_type;
 }
 
@@ -345,6 +357,13 @@ Type* visit_call_expr(CFGBuilderContext* ctx, TSNode node, char* result_var) {
     call.data.call.num_args = num_args;
 
     emit_instruction(ctx, call);
+
+    // Set line number for the call instruction
+    if (ctx->current_block && ctx->current_block->num_instructions > 0) {
+        TSPoint start = ts_node_start_point(node);
+        ctx->current_block->instructions[ctx->current_block->num_instructions - 1].line_number = start.row + 1;
+    }
+
     return callee->return_type;
 }
 
@@ -420,6 +439,13 @@ Type* visit_slice_expr(CFGBuilderContext* ctx, TSNode node, char* result_var) {
         strcpy(load.data.load.array, array_name);
         strcpy(load.data.load.index, start_index);
         emit_instruction(ctx, load);
+
+        // Set line number for the load instruction
+        if (ctx->current_block && ctx->current_block->num_instructions > 0) {
+            TSPoint start = ts_node_start_point(node);
+            ctx->current_block->instructions[ctx->current_block->num_instructions - 1].line_number = start.row + 1;
+        }
+
         return element_type;
     } else {
         // === Срез: arr[i..j] ===
@@ -534,6 +560,13 @@ Type* visit_literal_expr(CFGBuilderContext* ctx, TSNode node, char* result_var) 
         strcpy(assign.data.assign.target, result_var);
         assign.data.assign.value = make_const_operand_bool(value);
         emit_instruction(ctx, assign);
+
+        // Set line number for the assign instruction
+        if (ctx->current_block && ctx->current_block->num_instructions > 0) {
+            TSPoint start = ts_node_start_point(node);
+            ctx->current_block->instructions[ctx->current_block->num_instructions - 1].line_number = start.row + 1;
+        }
+
         return make_bool_type();
     }
 

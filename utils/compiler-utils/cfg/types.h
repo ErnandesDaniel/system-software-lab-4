@@ -91,6 +91,7 @@ typedef char BlockId[64]; // уникальное имя блока: "BB_0", "if
 
 typedef struct IRInstruction {
     IROpcode opcode;
+    int line_number;
     union {
 
         // Для вычислений: результат + операнды

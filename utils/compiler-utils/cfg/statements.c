@@ -341,6 +341,16 @@ void visit_statement(CFGBuilderContext* ctx, const TSNode node) {
         // Неизвестный тип — игнорируем или выводим предупреждение
         // Например, пустой statement
     }
+
+    int start_inst_count = ctx->current_block ? ctx->current_block->num_instructions : 0;
+
+    // ... existing if-else chain for dispatching statements ...
+
+    if (ctx->current_block && ctx->current_block->num_instructions > start_inst_count) {
+        TSPoint start_point = ts_node_start_point(node);
+        int line_num = start_point.row + 1;
+        ctx->current_block->instructions[start_inst_count].line_number = line_num;
+    }
 }
 
 
