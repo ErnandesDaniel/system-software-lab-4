@@ -1,31 +1,10 @@
-//Получить символ из консоли по его ASCII коду в виде числа
-extern def getchar() of int end
-
-//Напечатать символ по его ASCII коду
-extern def putchar(c of int) of int end
-
-//Напечатать строку
-extern def puts(s of string) end
-
-//Вывести число в консоль
-extern def printf(format of string, value of int) end
-
-
 def main () of int
 
 s = "Hello, World!. Enter some symbol"; //Присваиваем переменной строку
 
-puts(s); //Выводим строку в консоль
+c=10;
 
-c = getchar();     // читаем символ (программа ждёт ввод!)
-putchar(c);        // выводим его
-putchar(10);      // выводим перевод строки (\n)
-
-printf("%d", 10); // Выводим число в консоль
-
-putchar(10);      // выводим перевод строки (\n)
-
-return 27;
+return c;
 
 end
 
