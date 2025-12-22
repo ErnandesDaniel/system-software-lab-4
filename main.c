@@ -217,6 +217,42 @@ int main(const int argc, char *argv[]) {
                 if (asm_code) {
                     asm_code[0] = '\0';
                     asm_build_from_cfg(asm_code, func_info, &local_vars, func_cfg, &local_funcs);
+                    
+                    // Add global declarations for line labels
+                    // Find all line_X patterns in the generated code
+                    char* ptr = asm_code;
+                    char lines_found[100][32]; // Store line numbers we find
+                    int line_count = 0;
+                    
+                    while ((ptr = strstr(ptr, "line_")) != NULL && line_count < 100) {
+                        if (isdigit(ptr[5])) { // Make sure it's line_ followed by digits
+                            int line_num;
+                            if (sscanf(ptr, "line_%d", &line_num) == 1) {
+                                // Check if we already have this line
+                                bool found = false;
+                                for (int i = 0; i < line_count; i++) {
+                                    if (atoi(lines_found[i]) == line_num) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    sprintf(lines_found[line_count], "%d", line_num);
+                                    line_count++;
+                                }
+                            }
+                        }
+                        ptr++; // Move forward to avoid infinite loop
+                    }
+                    
+                    // Add global declarations for all found line labels
+                    for (int i = 0; i < line_count; i++) {
+                        fprintf(asm_file, "global line_%s\n", lines_found[i]);
+                    }
+                    
+                    // Add global .dbinfo declaration
+                    fprintf(asm_file, "global .dbinfo\n\n");
+                    
                     fputs(asm_code, asm_file);
                     free(asm_code);
                 }
