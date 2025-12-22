@@ -3,6 +3,11 @@ default rel
 section .text
 
 global main
+global line_3
+global line_5
+global line_last
+global .dbinfo
+
 
 main:
     push rbp
@@ -20,6 +25,7 @@ line_5:
     mov eax, [rbp + -32]
     mov [rbp + -40], eax
     mov eax, [rbp + -40]
+line_last:
 ; Очистка стека и возврат
     leave       ; эквивалент: mov rsp, rbp; pop rbp
     ret         ; возвращаем eax как результат

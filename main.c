@@ -249,7 +249,10 @@ int main(const int argc, char *argv[]) {
                     for (int i = 0; i < line_count; i++) {
                         fprintf(asm_file, "global line_%s\n", lines_found[i]);
                     }
-                    
+
+                    // Add global line_last declaration
+                    fprintf(asm_file, "global line_last\n");
+
                     // Add global .dbinfo declaration
                     fprintf(asm_file, "global .dbinfo\n\n");
                     
