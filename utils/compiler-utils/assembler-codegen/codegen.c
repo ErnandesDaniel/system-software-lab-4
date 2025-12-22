@@ -88,6 +88,7 @@ void emit_prologue(CodeGenContext* ctx) {
 
 //Генерирует эпилог: leave, ret.
 void emit_epilogue(CodeGenContext* ctx) {
+    sprintf(ctx->out + strlen(ctx->out), "line_last:\n");
     sprintf(ctx->out + strlen(ctx->out), "; Очистка стека и возврат\n");
     sprintf(ctx->out + strlen(ctx->out), "    leave       ; эквивалент: mov rsp, rbp; pop rbp\n");
     sprintf(ctx->out + strlen(ctx->out), "    ret         ; возвращаем eax как результат\n");
