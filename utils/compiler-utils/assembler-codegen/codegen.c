@@ -424,7 +424,11 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     sprintf(out + strlen(out), "\nsection .debug_info\n");
     sprintf(out + strlen(out), "    ; === Функция %s ===\n", func_info->name);
     sprintf(out + strlen(out), "    dq dbg_str_%s                 ; указатель на имя\n", func_info->name);
-    sprintf(out + strlen(out), "    dq %s                         ; старт\n", func_info->name);
+    if (strcmp(func_info->name, "main") == 0) {
+        sprintf(out + strlen(out), "    dq main_start                   ; Реальный адрес начала кода (для отладчика)\n");
+    } else {
+        sprintf(out + strlen(out), "    dq %s                         ; старт\n", func_info->name);
+    }
     sprintf(out + strlen(out), "    dq %s_end                     ; конец\n", func_info->name);
     sprintf(out + strlen(out), "    dd 0                          ; параметров: 0\n");
     sprintf(out + strlen(out), "    dd %d                         ; локальных: %d\n", unique_count, unique_count);
