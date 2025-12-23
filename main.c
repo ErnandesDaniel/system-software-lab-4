@@ -250,8 +250,8 @@ int main(const int argc, char *argv[]) {
                         fprintf(asm_file, "global line_%s\n", lines_found[i]);
                     }
 
-                    // Add global line_last declaration
-                    fprintf(asm_file, "global line_last\n");
+                    // Add global function_before_ret declaration
+                    fprintf(asm_file, "global %s_before_ret\n", func_name);
 
                     // Add global .dbinfo declaration
                     fprintf(asm_file, "global .dbinfo\n\n");

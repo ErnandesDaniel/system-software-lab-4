@@ -94,7 +94,7 @@ void emit_prologue(CodeGenContext* ctx) {
 
 //Генерирует эпилог: leave, ret.
 void emit_epilogue(CodeGenContext* ctx) {
-    sprintf(ctx->out + strlen(ctx->out), "line_last:\n");
+    sprintf(ctx->out + strlen(ctx->out), "%s_before_ret:\n", ctx->current_function->name);
     sprintf(ctx->out + strlen(ctx->out), "; Очистка стека и возврат\n");
     sprintf(ctx->out + strlen(ctx->out), "    leave       ; эквивалент: mov rsp, rbp; pop rbp\n");
     sprintf(ctx->out + strlen(ctx->out), "    ret         ; возвращаем eax как результат\n");
@@ -453,12 +453,9 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     // Generate debug_line section
     sprintf(out + strlen(out), "\nsection .debug_line\n");
+    sprintf(out + strlen(out), "dq %s_before_ret\n", func_info->name);
     for (int i = 0; i < ctx.debug_count; i++) {
-        sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
         sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[i]);
     }
-
-    sprintf(out + strlen(out), "dq line_last\n");
-    sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[ctx.debug_count-1]+1);
     sprintf(out + strlen(out), "dq 0, 0 ; Конец таблицы\n");
 }
