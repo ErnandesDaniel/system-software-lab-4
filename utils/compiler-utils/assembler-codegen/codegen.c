@@ -414,12 +414,12 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     // Append debug_str section
     if (strlen(ctx.debug_str_section) > 0) {
-        sprintf(out + strlen(out), "\nsection .debug_str\n");
+        sprintf(out + strlen(out), "\nsection .dbstr\n");
         sprintf(out + strlen(out), "%s", ctx.debug_str_section);
     }
 
     // Generate debug info
-    sprintf(out + strlen(out), "\nsection .debug_info\n");
+    sprintf(out + strlen(out), "\nsection .dbinfo\n");
     sprintf(out + strlen(out), "    ; === Функция %s ===\n", func_info->name);
     sprintf(out + strlen(out), "    dq dbg_str_%s                 ; указатель на имя\n", func_info->name);
     sprintf(out + strlen(out), "    dq %s_start                   ; Реальный адрес начала кода (для отладчика)\n", func_info->name);
@@ -446,7 +446,7 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     }
 
     // Generate debug_line section
-    sprintf(out + strlen(out), "\nsection .debug_line\n");
+    sprintf(out + strlen(out), "\nsection .dbline\n");
     for (int i = 0; i < ctx.debug_count; i++) {
         sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
         sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[i]);
