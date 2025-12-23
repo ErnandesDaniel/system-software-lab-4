@@ -150,8 +150,8 @@ int get_var_offset(SymbolTable* locals, const char* name) {
 }
 
 //проходит по блокам CFG, генерирует метки и инструкции для каждого IRInstruction (ASSIGN, ADD, SUB, LT, RET, JUMP, COND_BR).
-void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals, CFG* cfg, FunctionTable* local_funcs) {
-
+void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals, CFG* cfg, FunctionTable* local_funcs)
+{
     // Generate extern declarations for used functions
     for (int i = 0; i < local_funcs->count; i++) {
         FunctionInfo* func = local_funcs->functions[i];
@@ -194,9 +194,171 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
                 ctx.debug_lines[ctx.debug_count++] = inst->line_number;
             }
             switch (inst->opcode) {
-                case IR_ASSIGN:
-                    Operand* value = &inst->data.assign.value;
-                    const char* target = inst->data.assign.target;
+            case IR_ASSIGN:
+                Operand* value = &inst->data.assign.value;
+                const char* target = inst->data.assign.target;
+                bool is_string = false;
+
+                if (value->kind == OPERAND_CONST) {
+                    is_string = (value->data.const_val.type->kind == TYPE_STRING);
+                } else if (value->kind == OPERAND_VAR) {
+                    Symbol* sym = symbol_table_lookup(&ctx.local_vars, value->data.var.name);
+                    is_string = (sym && sym->type->kind == TYPE_STRING);
+                }
+
+                if (is_string) {
+                    emit_load_operand(&ctx, value, "rax");
+                    emit_store_to_var(&ctx, target, "rax");
+                } else {
+                    emit_load_operand(&ctx, value, "eax");
+                    emit_store_to_var(&ctx, target, "eax");
+                }
+                break;
+            case IR_ADD:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    add eax, ebx\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_SUB:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    sub eax, ebx\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_MUL:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    imul eax, ebx\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_DIV:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cdq\n");
+                sprintf(ctx.out + strlen(ctx.out), "    idiv ebx\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_EQ:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
+                sprintf(ctx.out + strlen(ctx.out), "    sete al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_NE:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
+                sprintf(ctx.out + strlen(ctx.out), "    setne al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_LT:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
+                sprintf(ctx.out + strlen(ctx.out), "    setl al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_LE:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
+                sprintf(ctx.out + strlen(ctx.out), "    setle al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_GT:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
+                sprintf(ctx.out + strlen(ctx.out), "    setg al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_GE:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
+                sprintf(ctx.out + strlen(ctx.out), "    setge al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_AND:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    and eax, ebx\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_OR:
+                emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
+                emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
+                sprintf(ctx.out + strlen(ctx.out), "    or eax, ebx\n");
+                emit_store_to_var(&ctx, inst->data.compute.result, "eax");
+                break;
+            case IR_NOT:
+                emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
+                sprintf(ctx.out + strlen(ctx.out), "    test eax, eax\n");
+                sprintf(ctx.out + strlen(ctx.out), "    setz al\n");
+                sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
+                emit_store_to_var(&ctx, inst->data.unary.result, "eax");
+                break;
+            case IR_NEG:
+                emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
+                sprintf(ctx.out + strlen(ctx.out), "    neg eax\n");
+                emit_store_to_var(&ctx, inst->data.unary.result, "eax");
+                break;
+            case IR_POS:
+                // Unary plus does nothing, just assign
+                emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
+                emit_store_to_var(&ctx, inst->data.unary.result, "eax");
+                break;
+            case IR_BIT_NOT:
+                emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
+                sprintf(ctx.out + strlen(ctx.out), "    not eax\n");
+                emit_store_to_var(&ctx, inst->data.unary.result, "eax");
+                break;
+            case IR_CALL:
+                // Microsoft x64 calling convention: pass args in rcx, rdx, r8, r9
+                // Use 32-bit registers for int/bool types, 64-bit for strings
+                const char* arg_regs_32[] = {"ecx", "edx", "r8d", "r9d"};
+                const char* arg_regs_64[] = {"rcx", "rdx", "r8", "r9"};
+                for (int k = 0; k < inst->data.call.num_args && k < 4; k++) {
+                    if (inst->data.call.args[k].kind == OPERAND_VAR &&
+                        symbol_table_lookup(&ctx.local_vars, inst->data.call.args[k].data.var.name) &&
+                        symbol_table_lookup(&ctx.local_vars, inst->data.call.args[k].data.var.name)->type->kind == TYPE_STRING) {
+                        // String variable - load 64-bit address
+                        int offset = get_var_offset(&ctx.local_vars, inst->data.call.args[k].data.var.name);
+                        sprintf(ctx.out + strlen(ctx.out), "    mov %s, [rbp + %d]\n", arg_regs_64[k], offset);
+                        } else if (inst->data.call.args[k].kind == OPERAND_CONST &&
+                            inst->data.call.args[k].data.const_val.type->kind == TYPE_STRING) {
+                            emit_load_operand(&ctx, &inst->data.call.args[k], arg_regs_64[k]);
+                            } else {
+                                emit_load_operand(&ctx, &inst->data.call.args[k], arg_regs_32[k]);
+                            }
+                }
+                sprintf(ctx.out + strlen(ctx.out), "    sub rsp, 32\n");
+                sprintf(ctx.out + strlen(ctx.out), "    call %s\n", inst->data.call.func_name);
+                sprintf(ctx.out + strlen(ctx.out), "    add rsp, 32\n");
+                if (strcmp(inst->data.call.result, "") != 0) {
+                    emit_store_to_var(&ctx, inst->data.call.result, "eax");
+                }
+                break;
+            case IR_JUMP:
+                sprintf(ctx.out + strlen(ctx.out), "    jmp %s\n", inst->data.jump.target);
+                break;
+            case IR_COND_BR:
+                emit_load_operand(&ctx, &inst->data.cond_br.condition, "eax");
+                sprintf(ctx.out + strlen(ctx.out), "    cmp eax, 0\n");
+                sprintf(ctx.out + strlen(ctx.out), "    jne %s\n", inst->data.cond_br.true_target);
+                sprintf(ctx.out + strlen(ctx.out), "    jmp %s\n", inst->data.cond_br.false_target);
+                break;
+            case IR_RET:
+                if (inst->data.ret.has_value) {
+                    Operand* value = &inst->data.ret.value;
                     bool is_string = false;
 
                     if (value->kind == OPERAND_CONST) {
@@ -208,176 +370,14 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
                     if (is_string) {
                         emit_load_operand(&ctx, value, "rax");
-                        emit_store_to_var(&ctx, target, "rax");
+                        // Значение уже в rax — ничего дополнительно делать не нужно
                     } else {
                         emit_load_operand(&ctx, value, "eax");
-                        emit_store_to_var(&ctx, target, "eax");
+                        // Значение уже в eax — корректно для возврата int/bool
                     }
-                    break;
-                case IR_ADD:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    add eax, ebx\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_SUB:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    sub eax, ebx\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_MUL:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    imul eax, ebx\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_DIV:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cdq\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    idiv ebx\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_EQ:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    sete al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_NE:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    setne al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_LT:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    setl al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_LE:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    setle al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_GT:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    setg al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_GE:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, ebx\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    setge al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_AND:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    and eax, ebx\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_OR:
-                    emit_load_operand(&ctx, &inst->data.compute.operands[0], "eax");
-                    emit_load_operand(&ctx, &inst->data.compute.operands[1], "ebx");
-                    sprintf(ctx.out + strlen(ctx.out), "    or eax, ebx\n");
-                    emit_store_to_var(&ctx, inst->data.compute.result, "eax");
-                    break;
-                case IR_NOT:
-                    emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
-                    sprintf(ctx.out + strlen(ctx.out), "    test eax, eax\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    setz al\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    movzx eax, al\n");
-                    emit_store_to_var(&ctx, inst->data.unary.result, "eax");
-                    break;
-                case IR_NEG:
-                    emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
-                    sprintf(ctx.out + strlen(ctx.out), "    neg eax\n");
-                    emit_store_to_var(&ctx, inst->data.unary.result, "eax");
-                    break;
-                case IR_POS:
-                    // Unary plus does nothing, just assign
-                    emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
-                    emit_store_to_var(&ctx, inst->data.unary.result, "eax");
-                    break;
-                case IR_BIT_NOT:
-                    emit_load_operand(&ctx, &inst->data.unary.operand, "eax");
-                    sprintf(ctx.out + strlen(ctx.out), "    not eax\n");
-                    emit_store_to_var(&ctx, inst->data.unary.result, "eax");
-                    break;
-                case IR_CALL:
-                     // Microsoft x64 calling convention: pass args in rcx, rdx, r8, r9
-                     // Use 32-bit registers for int/bool types, 64-bit for strings
-                     const char* arg_regs_32[] = {"ecx", "edx", "r8d", "r9d"};
-                     const char* arg_regs_64[] = {"rcx", "rdx", "r8", "r9"};
-                     for (int k = 0; k < inst->data.call.num_args && k < 4; k++) {
-                         if (inst->data.call.args[k].kind == OPERAND_VAR &&
-                             symbol_table_lookup(&ctx.local_vars, inst->data.call.args[k].data.var.name) &&
-                             symbol_table_lookup(&ctx.local_vars, inst->data.call.args[k].data.var.name)->type->kind == TYPE_STRING) {
-                             // String variable - load 64-bit address
-                             int offset = get_var_offset(&ctx.local_vars, inst->data.call.args[k].data.var.name);
-                             sprintf(ctx.out + strlen(ctx.out), "    mov %s, [rbp + %d]\n", arg_regs_64[k], offset);
-                         } else if (inst->data.call.args[k].kind == OPERAND_CONST &&
-                             inst->data.call.args[k].data.const_val.type->kind == TYPE_STRING) {
-                             emit_load_operand(&ctx, &inst->data.call.args[k], arg_regs_64[k]);
-                         } else {
-                             emit_load_operand(&ctx, &inst->data.call.args[k], arg_regs_32[k]);
-                         }
-                     }
-                     sprintf(ctx.out + strlen(ctx.out), "    sub rsp, 32\n");
-                     sprintf(ctx.out + strlen(ctx.out), "    call %s\n", inst->data.call.func_name);
-                     sprintf(ctx.out + strlen(ctx.out), "    add rsp, 32\n");
-                     if (strcmp(inst->data.call.result, "") != 0) {
-                         emit_store_to_var(&ctx, inst->data.call.result, "eax");
-                     }
-                     break;
-                case IR_JUMP:
-                    sprintf(ctx.out + strlen(ctx.out), "    jmp %s\n", inst->data.jump.target);
-                    break;
-                case IR_COND_BR:
-                    emit_load_operand(&ctx, &inst->data.cond_br.condition, "eax");
-                    sprintf(ctx.out + strlen(ctx.out), "    cmp eax, 0\n");
-                    sprintf(ctx.out + strlen(ctx.out), "    jne %s\n", inst->data.cond_br.true_target);
-                    sprintf(ctx.out + strlen(ctx.out), "    jmp %s\n", inst->data.cond_br.false_target);
-                    break;
-                case IR_RET:
-                    if (inst->data.ret.has_value) {
-                        Operand* value = &inst->data.ret.value;
-                        bool is_string = false;
-
-                        if (value->kind == OPERAND_CONST) {
-                            is_string = (value->data.const_val.type->kind == TYPE_STRING);
-                        } else if (value->kind == OPERAND_VAR) {
-                            Symbol* sym = symbol_table_lookup(&ctx.local_vars, value->data.var.name);
-                            is_string = (sym && sym->type->kind == TYPE_STRING);
-                        }
-
-                        if (is_string) {
-                            emit_load_operand(&ctx, value, "rax");
-                            // Значение уже в rax — ничего дополнительно делать не нужно
-                        } else {
-                            emit_load_operand(&ctx, value, "eax");
-                            // Значение уже в eax — корректно для возврата int/bool
-                        }
-                    }
-                    emit_epilogue(&ctx);
-                    break;
+                }
+                emit_epilogue(&ctx);
+                break;
             }
         }
     }
@@ -430,7 +430,7 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
         sprintf(out + strlen(out), "    dq %s                         ; старт\n", func_info->name);
     }
     sprintf(out + strlen(out), "    dq %s_end                     ; конец\n", func_info->name);
-    sprintf(out + strlen(out), "    dd 0                          ; параметров: 0\n");
+    //sprintf(out + strlen(out), "    dd 0                          ; параметров: 0\n");
     sprintf(out + strlen(out), "    dd %d                         ; локальных: %d\n", unique_count, unique_count);
 
     for (int i = 0; i < unique_count; i++) {
@@ -455,6 +455,10 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     sprintf(out + strlen(out), "\nsection .debug_line\n");
     for (int i = 0; i < ctx.debug_count; i++) {
         sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
-        sprintf(out + strlen(out), "dd %d\n", ctx.debug_lines[i]);
+        sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[i]);
     }
+
+    sprintf(out + strlen(out), "dq line_last\n");
+    sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[ctx.debug_count-1]+1);
+    sprintf(out + strlen(out), "dq 0, 0 ; Конец таблицы\n");
 }

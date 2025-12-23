@@ -13,6 +13,7 @@ main:
     push rbp
     mov rbp, rsp
     sub rsp, 72
+main_start:
 BB_0:
     lea rax, [str_0]
     mov [rbp + -8], rax
@@ -42,9 +43,8 @@ dbg_str_c db 'c', 0
 section .debug_info
     ; === Функция main ===
     dq dbg_str_main                 ; указатель на имя
-    dq main                         ; старт
+    dq main_start                   ; Реальный адрес начала кода (для отладчика)
     dq main_end                     ; конец
-    dd 0                          ; параметров: 0
     dd 2                         ; локальных: 2
     ; Переменная s
     dq dbg_str_s                    ; имя
@@ -57,6 +57,9 @@ section .debug_info
 
 section .debug_line
 dq line_3
-dd 3
+dq 3
 dq line_5
-dd 5
+dq 5
+dq line_last
+dq 6
+dq 0, 0 ; Конец таблицы
