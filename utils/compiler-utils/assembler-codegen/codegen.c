@@ -453,9 +453,11 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     // Generate debug_line section
     sprintf(out + strlen(out), "\nsection .debug_line\n");
-    sprintf(out + strlen(out), "dq %s_before_ret\n", func_info->name);
     for (int i = 0; i < ctx.debug_count; i++) {
+        sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
         sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[i]);
     }
+    sprintf(out + strlen(out), "dq %s_before_ret\n", func_info->name);
+    sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[ctx.debug_count-1]+1);
     sprintf(out + strlen(out), "dq 0, 0 ; Конец таблицы\n");
 }
