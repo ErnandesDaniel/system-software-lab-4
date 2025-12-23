@@ -83,6 +83,12 @@ void emit_prologue(CodeGenContext* ctx) {
     if (ctx->frame_size > 0) {
         sprintf(ctx->out + strlen(ctx->out), "    sub rsp, %d\n", ctx->frame_size);
     }
+
+    // Add main_start label after prologue for main function
+    if (strcmp(ctx->current_function->name, "main") == 0) {
+        sprintf(ctx->out + strlen(ctx->out), "main_start:\n");
+    }
+
     ctx->string_counter = 0;
 }
 
