@@ -1,84 +1,204 @@
 graph TD;
 N0["source"]
-N1["source_item"]
+N1["comment"]
 N0 --> N1
-N2["func_definition"]
-N1 --> N2
-N3["def"]
+N2["source_item"]
+N0 --> N2
+N3["func_definition"]
 N2 --> N3
-N4["func_signature"]
-N2 --> N4
-N5["identifier: main"]
-N4 --> N5
-N6["("]
-N4 --> N6
-N7[")"]
-N4 --> N7
-N8["of"]
-N4 --> N8
-N9["type_ref"]
-N4 --> N9
-N10["builtin_type"]
+N4["def"]
+N3 --> N4
+N5["func_signature"]
+N3 --> N5
+N6["identifier: square"]
+N5 --> N6
+N7["("]
+N5 --> N7
+N8["list_arg"]
+N5 --> N8
+N9["arg"]
+N8 --> N9
+N10["identifier: x"]
 N9 --> N10
-N11["int"]
-N10 --> N11
-N12["statement"]
-N2 --> N12
-N13["expression_statement"]
+N11["of"]
+N9 --> N11
+N12["type_ref"]
+N9 --> N12
+N13["builtin_type"]
 N12 --> N13
-N14["expr"]
+N14["int"]
 N13 --> N14
-N15["binary_expr"]
-N14 --> N15
-N16["expr"]
-N15 --> N16
-N17["identifier: s"]
-N16 --> N17
-N18["="]
-N15 --> N18
-N19["expr"]
-N15 --> N19
-N20["literal"]
-N19 --> N20
-N21["str: "Hello, World!. Enter some symbol""]
+N15[")"]
+N5 --> N15
+N16["of"]
+N5 --> N16
+N17["type_ref"]
+N5 --> N17
+N18["builtin_type"]
+N17 --> N18
+N19["int"]
+N18 --> N19
+N20["statement"]
+N3 --> N20
+N21["expression_statement"]
 N20 --> N21
-N22[";"]
-N13 --> N22
-N23["comment"]
-N2 --> N23
-N24["statement"]
-N2 --> N24
-N25["expression_statement"]
+N22["expr"]
+N21 --> N22
+N23["binary_expr"]
+N22 --> N23
+N24["expr"]
+N23 --> N24
+N25["identifier: b"]
 N24 --> N25
-N26["expr"]
-N25 --> N26
-N27["binary_expr"]
-N26 --> N27
-N28["expr"]
+N26["="]
+N23 --> N26
+N27["expr"]
+N23 --> N27
+N28["literal"]
 N27 --> N28
-N29["identifier: c"]
+N29["dec: 6"]
 N28 --> N29
-N30["="]
-N27 --> N30
-N31["expr"]
-N27 --> N31
-N32["literal"]
+N30[";"]
+N21 --> N30
+N31["statement"]
+N3 --> N31
+N32["return_statement"]
 N31 --> N32
-N33["dec: 10"]
+N33["return"]
 N32 --> N33
-N34[";"]
-N25 --> N34
-N35["statement"]
-N2 --> N35
-N36["return_statement"]
+N34["expr"]
+N32 --> N34
+N35["binary_expr"]
+N34 --> N35
+N36["expr"]
 N35 --> N36
-N37["return"]
+N37["identifier: x"]
 N36 --> N37
-N38["expr"]
-N36 --> N38
-N39["identifier: c"]
-N38 --> N39
-N40[";"]
-N36 --> N40
-N41["end"]
-N2 --> N41
+N38["*"]
+N35 --> N38
+N39["expr"]
+N35 --> N39
+N40["identifier: x"]
+N39 --> N40
+N41[";"]
+N32 --> N41
+N42["end"]
+N3 --> N42
+N43["source_item"]
+N0 --> N43
+N44["func_definition"]
+N43 --> N44
+N45["def"]
+N44 --> N45
+N46["func_signature"]
+N44 --> N46
+N47["identifier: main"]
+N46 --> N47
+N48["("]
+N46 --> N48
+N49[")"]
+N46 --> N49
+N50["of"]
+N46 --> N50
+N51["type_ref"]
+N46 --> N51
+N52["builtin_type"]
+N51 --> N52
+N53["int"]
+N52 --> N53
+N54["statement"]
+N44 --> N54
+N55["expression_statement"]
+N54 --> N55
+N56["expr"]
+N55 --> N56
+N57["binary_expr"]
+N56 --> N57
+N58["expr"]
+N57 --> N58
+N59["identifier: s"]
+N58 --> N59
+N60["="]
+N57 --> N60
+N61["expr"]
+N57 --> N61
+N62["literal"]
+N61 --> N62
+N63["str: "Hello, World!. Enter some symbol""]
+N62 --> N63
+N64[";"]
+N55 --> N64
+N65["comment"]
+N44 --> N65
+N66["statement"]
+N44 --> N66
+N67["expression_statement"]
+N66 --> N67
+N68["expr"]
+N67 --> N68
+N69["binary_expr"]
+N68 --> N69
+N70["expr"]
+N69 --> N70
+N71["identifier: c"]
+N70 --> N71
+N72["="]
+N69 --> N72
+N73["expr"]
+N69 --> N73
+N74["literal"]
+N73 --> N74
+N75["dec: 10"]
+N74 --> N75
+N76[";"]
+N67 --> N76
+N77["statement"]
+N44 --> N77
+N78["expression_statement"]
+N77 --> N78
+N79["expr"]
+N78 --> N79
+N80["binary_expr"]
+N79 --> N80
+N81["expr"]
+N80 --> N81
+N82["identifier: b"]
+N81 --> N82
+N83["="]
+N80 --> N83
+N84["expr"]
+N80 --> N84
+N85["call_expr"]
+N84 --> N85
+N86["expr"]
+N85 --> N86
+N87["identifier: square"]
+N86 --> N87
+N88["("]
+N85 --> N88
+N89["list_expr"]
+N85 --> N89
+N90["expr"]
+N89 --> N90
+N91["literal"]
+N90 --> N91
+N92["dec: 3"]
+N91 --> N92
+N93[")"]
+N85 --> N93
+N94[";"]
+N78 --> N94
+N95["statement"]
+N44 --> N95
+N96["return_statement"]
+N95 --> N96
+N97["return"]
+N96 --> N97
+N98["expr"]
+N96 --> N98
+N99["identifier: b"]
+N98 --> N99
+N100[";"]
+N96 --> N100
+N101["end"]
+N44 --> N101
