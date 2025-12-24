@@ -450,7 +450,9 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     // Generate debug_line section
     sprintf(out + strlen(out), "\nsection .dbline\n");
-    sprintf(out + strlen(out), "    align 16                    ; Начало блока строк\n");
+    sprintf(out + strlen(out), "align 16                    ; Начало блока строк\n");
+    sprintf(out + strlen(out), "dq %s_start       ; Указываем, чьи это строки\n", func_info->name);
+    sprintf(out + strlen(out), "dq %d                ; Сколько строк в этом блоке\n", ctx.debug_count * 2 + 2);
     for (int i = 0; i < ctx.debug_count; i++) {
         sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
         sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[i]);
