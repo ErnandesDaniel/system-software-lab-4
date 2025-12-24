@@ -420,6 +420,7 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     // Generate debug info
     sprintf(out + strlen(out), "\nsection .dbinfo\n");
+    sprintf(out + strlen(out), "    align 16                    ; Гарантируем начало структуры на границе 16 байт\n");
     sprintf(out + strlen(out), "    ; === Функция %s ===\n", func_info->name);
     sprintf(out + strlen(out), "    dq dbg_str_%s                 ; указатель на имя\n", func_info->name);
     sprintf(out + strlen(out), "    dq %s_start                   ; Реальный адрес начала кода (для отладчика)\n", func_info->name);
@@ -444,14 +445,16 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
             sprintf(out + strlen(out), "    dd %d                           ; смещение\n", sym->stack_offset);
         }
     }
+    sprintf(out + strlen(out), "    align 16                    ; Конец секции в этом файле\n");
 
     // Generate debug_line section
     sprintf(out + strlen(out), "\nsection .dbline\n");
+    sprintf(out + strlen(out), "    align 16                    ; Начало блока строк\n");
     for (int i = 0; i < ctx.debug_count; i++) {
         sprintf(out + strlen(out), "dq line_%d\n", ctx.debug_lines[i]);
         sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[i]);
     }
     sprintf(out + strlen(out), "dq %s_before_ret\n", func_info->name);
     sprintf(out + strlen(out), "dq %d\n", ctx.debug_lines[ctx.debug_count-1]+1);
-    sprintf(out + strlen(out), "dq 0, 0 ; Конец таблицы\n");
+    sprintf(out + strlen(out), "align 16\n");
 }
