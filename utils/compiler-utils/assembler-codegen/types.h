@@ -18,7 +18,7 @@ typedef struct CodeGenContext {
 
 
 
-void codegen_layout_stack_frame(SymbolTable* locals, int* out_frame_size);
+void codegen_layout_stack_frame(FunctionInfo* func_info, SymbolTable* locals, int* out_frame_size);
 
 // Что делает:
 // Проходит по всем символам в locals.
@@ -100,8 +100,3 @@ int get_var_offset(SymbolTable* locals, const char* name);
 //
 //
 //
-
-
-
-
-

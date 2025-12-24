@@ -61,15 +61,48 @@ static int align_stack_size(int size) {
     return aligned;
 }
 
-void codegen_layout_stack_frame(SymbolTable* locals, int* out_frame_size) {
-    int offset = -8;
-    for (int i = 0; i < locals->count; i++) {
-        // ВСЕ переменные — по 8-байтным слотам
-        locals->symbols[i].stack_offset = offset;
-        offset -= 8;
+void codegen_layout_stack_frame(FunctionInfo* func_info, SymbolTable* locals, int* out_frame_size) {
+    // First, assign offsets to parameters
+    for (int i = 0; i < func_info->params.count; i++) {
+        // Find the symbol in locals
+        for (int j = 0; j < locals->count; j++) {
+            if (strcmp(locals->symbols[j].name, func_info->params.symbols[i].name) == 0) {
+                if (i < 4) {
+                    locals->symbols[j].stack_offset = -8 - i * 8; // -8, -16, -24, -32
+                } else {
+                    locals->symbols[j].stack_offset = 48 + (i - 4) * 8; // 48, 56, 64...
+                }
+                break;
+            }
+        }
     }
-    int frame_size = -offset;
-    *out_frame_size = align_stack_size(frame_size); // ← остаётся
+
+    // Now, assign offsets to local variables starting from -40
+    int offset = -40;
+    for (int i = 0; i < locals->count; i++) {
+        // Check if it's a parameter (already assigned)
+        bool is_param = false;
+        for (int p = 0; p < func_info->params.count; p++) {
+            if (strcmp(locals->symbols[i].name, func_info->params.symbols[p].name) == 0) {
+                is_param = true;
+                break;
+            }
+        }
+        if (!is_param) {
+            locals->symbols[i].stack_offset = offset;
+            offset -= 8;
+        }
+    }
+
+    // Calculate frame size: space from rbp to the lowest offset
+    int min_offset = 0;
+    for (int i = 0; i < locals->count; i++) {
+        if (locals->symbols[i].stack_offset < min_offset) {
+            min_offset = locals->symbols[i].stack_offset;
+        }
+    }
+    int frame_size = -min_offset; // since min_offset is negative
+    *out_frame_size = align_stack_size(frame_size);
 }
 
 
@@ -79,6 +112,13 @@ void emit_prologue(CodeGenContext* ctx) {
     sprintf(ctx->out + strlen(ctx->out), "%s:\n", ctx->current_function->name);
     sprintf(ctx->out + strlen(ctx->out), "    push rbp\n");
     sprintf(ctx->out + strlen(ctx->out), "    mov rbp, rsp\n");
+
+    // Spill first 4 parameters to stack
+    const char* param_regs[] = {"rcx", "rdx", "r8", "r9"};
+    for (int i = 0; i < ctx->current_function->params.count && i < 4; i++) {
+        int offset = -8 - i * 8;
+        sprintf(ctx->out + strlen(ctx->out), "    mov [rbp + %d], %s\n", offset, param_regs[i]);
+    }
 
     if (ctx->frame_size > 0) {
         sprintf(ctx->out + strlen(ctx->out), "    sub rsp, %d\n", ctx->frame_size);
@@ -115,12 +155,11 @@ void emit_load_operand(CodeGenContext* ctx, Operand* op, const char* reg) {
         // Примечание: для строк в lea регистр может быть rax, rcx и т.д. — это нормально
     } else if (op->kind == OPERAND_VAR) {
         // Check if it's a parameter
-        for (int i = 0; i < ctx->current_function->params.count && i < 4; i++) {
+        for (int i = 0; i < ctx->current_function->params.count; i++) {
             if (strcmp(ctx->current_function->params.symbols[i].name, op->data.var.name) == 0) {
-                // Для параметров мы всё ещё используем 32-битные регистры из соглашения,
-                // но сохраняем результат в переданный регистр `reg`
-                const char* param_regs[] = {"ecx", "edx", "r8d", "r9d"};
-                sprintf(ctx->out + strlen(ctx->out), "    mov %s, %s\n", reg, param_regs[i]);
+                // Load from stack offset
+                int offset = get_var_offset(&ctx->local_vars, op->data.var.name);
+                sprintf(ctx->out + strlen(ctx->out), "    mov %s, [rbp + %d]\n", reg, offset);
                 return;
             }
         }
@@ -161,7 +200,7 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
 
     int frame_size;
 
-    codegen_layout_stack_frame(locals, &frame_size);
+    codegen_layout_stack_frame(func_info, locals, &frame_size);
 
     CodeGenContext ctx = {0}; // обнуляет ВСЮ структуру, включая data_section
     ctx.out = out;
