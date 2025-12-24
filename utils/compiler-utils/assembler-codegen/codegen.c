@@ -427,6 +427,7 @@ void asm_build_from_cfg(char* out, FunctionInfo* func_info, SymbolTable* locals,
     sprintf(out + strlen(out), "    dq %s_end                     ; конец\n", func_info->name);
     //sprintf(out + strlen(out), "    dd 0                          ; параметров: 0\n");
     sprintf(out + strlen(out), "    dd %d                         ; локальных: %d\n", unique_count, unique_count);
+    sprintf(out + strlen(out), "    dd 0\n");
 
     for (int i = 0; i < unique_count; i++) {
         // Find the first symbol with this name
